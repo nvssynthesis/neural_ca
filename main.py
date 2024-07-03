@@ -68,25 +68,6 @@ def apply_nonlinearity(array: np.ndarray, nonlinearity: callable) -> np.ndarray:
     array = nonlinearity(array)
     return array
 
-class Draw():
-    def __init__(self):
-        self.last_screen = np.zeros((SCREEN_WIDTH, SCREEN_HEIGHT, 3), dtype=np.float64)
-    
-    def __call__(self, screen):
-        self.draw(screen)
-
-    def draw(self, screen: pg.Surface):
-        interp_factor = 0.95
-        fadeout_factor = 0.5
-        s = surf_to_normalized_array(screen) * interp_factor
-        # set any pixels that are less than 0.1 to 0
-        s += self.last_screen * (1 - interp_factor)
-        s = np.where(s < 0.09, 0, s)
-        s = np.clip(s, 0, 1)
-        s = normalized_array_to_surf(s)
-        screen.blit(s, (0, 0))
-        self.last_screen = surf_to_normalized_array(s) * fadeout_factor
-
 
 def clear(screen):
     screen.fill((0, 0, 0))
@@ -95,19 +76,55 @@ def main():
     # make window appear
     pg.init()
     screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    fps = pg.time.Clock()
+    clock = pg.time.Clock()
     pg.display.set_caption("neural worms")
 
     clear(screen)
     backdrop = screen.copy()
 
-    base_kernel = np.random.rand(3, 3)
-
-    # draw = Draw()
+    base_kernel = np.array([[0, 0, 0], 
+                            [0, 0, 0], 
+                            [0, 0, 0]], dtype=np.float64)
 
     # keep window on screen
     running = True
     while running:
+        # affect the matrix in small increments using the 3x3 grid of keys: q, w, e, a, s, d, z, x, c
+        # if up or down arrow keys are clicked while one of these keys are clicked, the value of the 
+        # kernel for that entry is increased or decreased
+        keys = pg.key.get_pressed()
+        increment = 0.01
+        if keys[pg.K_UP] or keys[pg.K_DOWN]:
+            should_print = False
+            if keys[pg.K_q]:
+                base_kernel[0, 0] += increment if keys[pg.K_UP] else -increment
+                should_print = True
+            if keys[pg.K_w]:
+                base_kernel[0, 1] += increment if keys[pg.K_UP] else -increment
+                should_print = True
+            if keys[pg.K_e]:
+                base_kernel[0, 2] += increment if keys[pg.K_UP] else -increment
+                should_print = True
+            if keys[pg.K_a]:
+                base_kernel[1, 0] += increment if keys[pg.K_UP] else -increment
+                should_print = True
+            if keys[pg.K_s]:
+                base_kernel[1, 1] += increment if keys[pg.K_UP] else -increment
+                should_print = True
+            if keys[pg.K_d]:
+                base_kernel[1, 2] += increment if keys[pg.K_UP] else -increment
+                should_print = True
+            if keys[pg.K_z]:
+                base_kernel[2, 0] += increment if keys[pg.K_UP] else -increment
+                should_print = True
+            if keys[pg.K_x]:
+                base_kernel[2, 1] += increment if keys[pg.K_UP] else -increment
+                should_print = True
+            if keys[pg.K_c]:
+                base_kernel[2, 2] += increment if keys[pg.K_UP] else -increment
+                should_print = True
+            if should_print:
+                print(base_kernel)
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
@@ -136,6 +153,8 @@ def main():
                         [-0.993, -0.792,  0.609],
                         [0.392, 0.74, -0.987]
                     ])
+
+
         clear(screen)
         
         # get mouse position
@@ -151,22 +170,15 @@ def main():
             color = np.random.rand(3)
             color = color * 255
             pg.draw.circle(backdrop, color=color, center=mouse_pos, radius=3, width=1)
-        # add backdrop to screen
-        # screen.blit(add_surfaces(screen, backdrop, amt_1=1.0, amt_2=1.0), (0, 0))
-
-        # draw(screen)
-
 
         backdrop = surf_to_normalized_array(backdrop)
-        # backdrop = np.sin(0.07125 * backdrop * 2 * np.pi)
         backdrop = convolve_array(backdrop, base_kernel)
-        backdrop = apply_nonlinearity(backdrop, lambda x: np.cos(x))
-        # print(f'{np.max(backdrop[:,:,0])}, {np.max(backdrop[:,:,1])}, {np.max(backdrop[:,:,2])}')
+        backdrop = apply_nonlinearity(backdrop, lambda x: np.sin(x))
         backdrop = normalized_array_to_surf(backdrop)
         
         screen.blit(backdrop, (0, 0))
         pg.display.flip()
-        fps.tick(60)
+        clock.tick(60)
 
     pg.quit()
 
