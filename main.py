@@ -4,6 +4,11 @@ from scipy.signal import convolve2d
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
+BACKDROP_WIDTH = int(SCREEN_WIDTH * 0.8)
+BACKDROP_HEIGHT = int(SCREEN_HEIGHT * 1.0)
+
+KERNEL_DISPLAY_WIDTH = SCREEN_WIDTH - BACKDROP_WIDTH
+KERNEL_DISPLAY_HEIGHT = KERNEL_DISPLAY_WIDTH
 
 def surf_to_normalized_array(surf: pg.Surface) -> np.ndarray:
     array = pg.surfarray.array3d(surf)
@@ -32,16 +37,6 @@ def roll_surface(surf: pg.Surface, n: int=1) -> pg.Surface:
     return normalized_array_to_surf(array)
 
 def convolve_array(array: np.ndarray, base_kernel: np.ndarray) -> np.ndarray:
-    # 5x5 kernel
-    # base_kernel = np.array(
-    #     [
-    #         [2/5,   1/5,  2/5],
-    #         [-0.0, -0.0,  -0.0],
-    #         [-.0,  -0.0,  -0.0],
-    #     ])
-    # make random 3x3 base kernel
-    
-    # base_kernel = np.flip(base_kernel, axis=0)
     bk = base_kernel.T
 
     kernel = np.array([
@@ -80,7 +75,11 @@ def main():
     pg.display.set_caption("neural worms")
 
     clear(screen)
-    backdrop = screen.copy()
+    # backdrop occupies 80% of the screen and is initially all black
+    backdrop = np.zeros((BACKDROP_WIDTH, BACKDROP_HEIGHT, 3), dtype=np.float64)
+    backdrop = normalized_array_to_surf(backdrop)
+
+
 
     base_kernel = np.array([[0, 0, 0], 
                             [0, 0, 0], 
@@ -135,7 +134,7 @@ def main():
                     clear(backdrop)
                 # if 'r' is clicked, randomize the backdrop
                 if event.key == pg.K_r:
-                    backdrop = np.random.rand(SCREEN_WIDTH, SCREEN_HEIGHT, 3)
+                    backdrop = np.random.rand(BACKDROP_WIDTH, BACKDROP_HEIGHT, 3)
                     backdrop *= backdrop
                     # print random 3x3 selection of backdrop
                     print(backdrop[:3, :3, :])
