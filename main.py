@@ -30,29 +30,26 @@ def roll_surface(surf: pg.Surface, n: int=1) -> pg.Surface:
     array = np.roll(array, -n, axis=1)
     return normalized_array_to_surf(array)
 
-def convolve_surface(surf: pg.Surface) -> pg.Surface:
+def convolve_array(array: np.ndarray) -> np.ndarray:
     kernel = np.array([
-        [[0, 0, 1],     # r
-         [0, 1, 0], 
-         [0, 0, 0]],
-        [[0, 0.1, 0],     # g
-         [0.1, -1, 0.1], 
-         [0, 0.1, 0]],
-        [[0, 0, 0],     # b
-         [0, 1, 0], 
-         [1, 0, 0]]
+        # r
+        [[0,   0.1,   0.1],
+         [0.6, 1,     0], 
+         [-1,   0,     -0.6]],
     ])  
-    array = surf_to_normalized_array(surf)
     channels = []
     for chan in range(array.shape[2]):
         channel = array[:, :, chan]
         # Apply convolve2d to each channel with its own kernel
         # Assuming kernel is a list of kernels for each channel
-        convolved_channel = convolve2d(channel, kernel[chan], mode='same', boundary='wrap')
+        convolved_channel = convolve2d(channel, kernel[0], mode='same', boundary='wrap')
         channels.append(convolved_channel)        
     array = np.stack(channels, axis=-1)
-    # array = convolve2d(array, kernel, mode='same', boundary='wrap')
-    return normalized_array_to_surf(array)
+    return array
+
+def apply_nonlinearity(array: np.ndarray, nonlinearity: callable) -> np.ndarray:
+    array = nonlinearity(array)
+    return array
 
 class Draw():
     def __init__(self):
@@ -117,7 +114,10 @@ def main():
         draw(screen)
 
         # backdrop = roll_surface(backdrop, n=1)
-        backdrop = convolve_surface(backdrop)
+        backdrop = surf_to_normalized_array(backdrop)
+        backdrop = apply_nonlinearity(backdrop, np.sin)
+        backdrop = convolve_array(backdrop)
+        backdrop = normalized_array_to_surf(backdrop)
 
         pg.display.flip()
         fps.tick(60)
