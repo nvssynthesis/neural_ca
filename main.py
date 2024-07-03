@@ -26,12 +26,14 @@ class Draw():
         self.draw(screen)
 
     def draw(self, screen: pg.Surface):
-        s = surf_to_normalized_array(screen) * 0.95
-        s += self.last_screen
+        interp_factor = 0.95
+        fadeout_factor = 0.7
+        s = surf_to_normalized_array(screen) * interp_factor
+        s += self.last_screen * (1 - interp_factor)
         s = np.clip(s, 0, 1)
         s = normalized_array_to_surf(s)
         screen.blit(s, (0, 0))
-        self.last_screen = surf_to_normalized_array(s) * 0.04
+        self.last_screen = surf_to_normalized_array(s) * fadeout_factor
 
 
 def clear(screen):
