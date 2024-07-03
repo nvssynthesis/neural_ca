@@ -33,13 +33,20 @@ def roll_surface(surf: pg.Surface, n: int=1) -> pg.Surface:
 
 def convolve_array(array: np.ndarray) -> np.ndarray:
     # 5x5 kernel
-    kernel = np.array([[
-        [.1, 0, 0, 0, .1],
+    base_kernel = np.array(
+        [[.1, 0, 0, 0, .1],
         [0, 0, 1, 0, 0],
-        [0, 1,-8, 1, 0],
+        [0, 1,-9, 1, 0],
         [0, 0, 1, 0, 0],
-        [.1, 0, 0, 0, .1]
-    ]])
+        [.1, 0, 0, 0, .1]])
+    kernel = np.array([
+        base_kernel,
+        base_kernel,
+        base_kernel
+    ])
+    kernel[0] = kernel[0] * 0.9
+    kernel[1] = kernel[0] * 0.8
+    kernel[2] = kernel[0] * 0.7
     if np.max(array) > 1:
         breakpoint()
     channels = []
@@ -120,7 +127,7 @@ def main():
 
         # backdrop = roll_surface(backdrop, n=1)
         backdrop = surf_to_normalized_array(backdrop)
-        backdrop = apply_nonlinearity(backdrop, np.sin)
+        backdrop = np.sin(0.07125 * backdrop * 2 * np.pi)
         backdrop = convolve_array(backdrop)
         backdrop = normalized_array_to_surf(backdrop)
 
