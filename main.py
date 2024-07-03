@@ -22,6 +22,7 @@ def add_surfaces(surf1: pg.Surface, surf2: pg.Surface, amt_1: float = 0.5, amt_2
     array1 = surf_to_normalized_array(surf1)
     array2 = surf_to_normalized_array(surf2)
     array = array1 * amt_1 + array2 * amt_2
+    array = np.clip(array, 0, 1)
     return normalized_array_to_surf(array)
 
 
@@ -30,23 +31,27 @@ def roll_surface(surf: pg.Surface, n: int=1) -> pg.Surface:
     array = np.roll(array, -n, axis=1)
     return normalized_array_to_surf(array)
 
-
-def convolve_array(array: np.ndarray) -> np.ndarray:
+def convolve_array(array: np.ndarray, base_kernel: np.ndarray) -> np.ndarray:
     # 5x5 kernel
-    base_kernel = np.array(
-        [[.1, 0, 0, 0, .1],
-        [0, 0, 1, 0, 0],
-        [0, 1,-9, 1, 0],
-        [0, 0, 1, 0, 0],
-        [.1, 0, 0, 0, .1]])
+    # base_kernel = np.array(
+    #     [
+    #         [2/5,   1/5,  2/5],
+    #         [-0.0, -0.0,  -0.0],
+    #         [-.0,  -0.0,  -0.0],
+    #     ])
+    # make random 3x3 base kernel
+    
+    # base_kernel = np.flip(base_kernel, axis=0)
+    bk = base_kernel.T
+
     kernel = np.array([
-        base_kernel,
-        base_kernel,
-        base_kernel
+        bk,
+        bk,
+        bk
     ])
-    kernel[0] = kernel[0] * 0.9
-    kernel[1] = kernel[0] * 0.8
-    kernel[2] = kernel[0] * 0.7
+    kernel[0] = kernel[0] * 1
+    kernel[1] = kernel[0] * 1
+    kernel[2] = kernel[0] * 1
     if np.max(array) > 1:
         breakpoint()
     channels = []
@@ -96,7 +101,9 @@ def main():
     clear(screen)
     backdrop = screen.copy()
 
-    draw = Draw()
+    base_kernel = np.random.rand(3, 3)
+
+    # draw = Draw()
 
     # keep window on screen
     running = True
@@ -109,6 +116,27 @@ def main():
                 if event.key == pg.K_SPACE:
                     clear(screen)
                     clear(backdrop)
+                # if 'r' is clicked, randomize the backdrop
+                if event.key == pg.K_r:
+                    backdrop = np.random.rand(SCREEN_WIDTH, SCREEN_HEIGHT, 3)
+                    backdrop *= backdrop
+                    # print random 3x3 selection of backdrop
+                    print(backdrop[:3, :3, :])
+                    backdrop = normalized_array_to_surf(backdrop)
+                # if 'k' is clicked, randomize the kernel
+                if event.key == pg.K_k:
+                    base_kernel = np.random.rand(3, 3)
+                    base_kernel *= 2.0
+                    base_kernel -= 1.0
+                    print(base_kernel)
+                # for a few number keys, a preset kernel is chosen
+                if event.key == pg.K_0:
+                    base_kernel = np.array([
+                        [-0.795, -0.671, 0.501],
+                        [-0.993, -0.792,  0.609],
+                        [0.392, 0.74, -0.987]
+                    ])
+        clear(screen)
         
         # get mouse position
         mouse_pos = pg.mouse.get_pos()
@@ -119,18 +147,24 @@ def main():
         # hold drawing if mouse was clicked
         if pg.mouse.get_pressed()[0]:
             # draw circle on backdrop
-            pg.draw.circle(backdrop, color=(128, 128, 128), center=mouse_pos, radius=1, width=1)
+            # random color
+            color = np.random.rand(3)
+            color = color * 255
+            pg.draw.circle(backdrop, color=color, center=mouse_pos, radius=3, width=1)
         # add backdrop to screen
-        screen.blit(add_surfaces(screen, backdrop, amt_1=1.0, amt_2=1.0), (0, 0))
+        # screen.blit(add_surfaces(screen, backdrop, amt_1=1.0, amt_2=1.0), (0, 0))
 
-        draw(screen)
+        # draw(screen)
 
-        # backdrop = roll_surface(backdrop, n=1)
+
         backdrop = surf_to_normalized_array(backdrop)
-        backdrop = np.sin(0.07125 * backdrop * 2 * np.pi)
-        backdrop = convolve_array(backdrop)
+        # backdrop = np.sin(0.07125 * backdrop * 2 * np.pi)
+        backdrop = convolve_array(backdrop, base_kernel)
+        backdrop = apply_nonlinearity(backdrop, lambda x: np.sin(x))
+        # print(f'{np.max(backdrop[:,:,0])}, {np.max(backdrop[:,:,1])}, {np.max(backdrop[:,:,2])}')
         backdrop = normalized_array_to_surf(backdrop)
-
+        
+        screen.blit(backdrop, (0, 0))
         pg.display.flip()
         fps.tick(60)
 
