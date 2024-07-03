@@ -160,7 +160,7 @@ def main():
         backdrop = surf_to_normalized_array(backdrop)
         # backdrop = np.sin(0.07125 * backdrop * 2 * np.pi)
         backdrop = convolve_array(backdrop, base_kernel)
-        backdrop = apply_nonlinearity(backdrop, lambda x: np.sin(x))
+        backdrop = apply_nonlinearity(backdrop, lambda x: np.cos(x))
         # print(f'{np.max(backdrop[:,:,0])}, {np.max(backdrop[:,:,1])}, {np.max(backdrop[:,:,2])}')
         backdrop = normalized_array_to_surf(backdrop)
         
