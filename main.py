@@ -12,7 +12,7 @@ def surf_to_normalized_array(surf: pg.Surface) -> np.ndarray:
     return array
 
 def normalized_array_to_surf(array: np.ndarray) -> pg.Surface:
-    array = np.clip(array, 0, 1 - 1/255)
+    # array = np.clip(array, 0, 1 - 1/255)
     array *= 255
     # array = array.astype(np.uint8)
     surf = pg.surfarray.make_surface(array)
@@ -30,13 +30,18 @@ def roll_surface(surf: pg.Surface, n: int=1) -> pg.Surface:
     array = np.roll(array, -n, axis=1)
     return normalized_array_to_surf(array)
 
+
 def convolve_array(array: np.ndarray) -> np.ndarray:
-    kernel = np.array([
-        # r
-        [[0,   0.1,   0.1],
-         [0.6, 1,     0], 
-         [-1,   0,     -0.6]],
-    ])  
+    # 5x5 kernel
+    kernel = np.array([[
+        [.1, 0, 0, 0, .1],
+        [0, 0, 1, 0, 0],
+        [0, 1,-8, 1, 0],
+        [0, 0, 1, 0, 0],
+        [.1, 0, 0, 0, .1]
+    ]])
+    if np.max(array) > 1:
+        breakpoint()
     channels = []
     for chan in range(array.shape[2]):
         channel = array[:, :, chan]
@@ -101,7 +106,7 @@ def main():
         # get mouse position
         mouse_pos = pg.mouse.get_pos()
 
-        pg.draw.circle(screen, color=(50, 128, 200), center=mouse_pos, radius=5, width=1, 
+        pg.draw.circle(screen, color=(50, 128, 200), center=mouse_pos, radius=3, width=1, 
             draw_top_right=False, draw_top_left=False, draw_bottom_right=False, draw_bottom_left=False)
         
         # hold drawing if mouse was clicked
