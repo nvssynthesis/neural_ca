@@ -67,6 +67,78 @@ def apply_nonlinearity(array: np.ndarray, nonlinearity: callable) -> np.ndarray:
 def clear(screen):
     screen.fill((0, 0, 0))
 
+def display_kernel(screen, kernel):
+    block_size = KERNEL_DISPLAY_WIDTH // 3
+    color = np.array([1,0,-1], dtype=np.float64)
+
+    for i in range(3):
+        for j in range(3):
+            this_color = color * kernel[i, j]
+            this_color = np.clip(this_color, 0, 1)
+            this_color *= 255
+            this_color = this_color.astype(np.uint8)
+            this_color = tuple(this_color)
+            block_surf = pg.Surface((block_size, block_size))
+            block_surf.fill(this_color)
+
+            pos_x = BACKDROP_WIDTH + j * block_size
+            pos_y = i * block_size
+            screen.blit(block_surf, (pos_x, pos_y))
+
+kernel_presets: dict = {
+    0: np.array([
+        [-0.795, -0.671, 0.501],
+        [-0.993, -0.792,  0.609],
+        [0.392, 0.74, -0.987]
+    ]),
+    1: np.array([
+        [0.5, 0.5, 0.5],
+        [0.5, 0.5, 0.5],
+        [0.5, 0.5, 0.5]
+    ]),
+    2: np.array([
+        [0, 0, 0],
+        [0, 1, 0],
+        [0, 0, 0]
+    ]),
+    3: np.array([
+        [0, 0, 0],
+        [0, 0, 1],
+        [0, 0, 0]
+    ]),
+    4: np.array([
+        [0, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1]
+    ]),
+    5: np.array([
+        [0, 0, 0],
+        [0, 1, 0],
+        [0, 1, 0]
+    ]),
+    6: np.array([
+        [0, 0, 0],
+        [0, 1, 1],
+        [0, 0, 0]
+    ]),
+    7: np.array([
+        [0, 0, 0],
+        [1, 1, 0],
+        [0, 0, 0]
+    ]),
+    8: np.array([
+        [0, 0, 0],
+        [0, 1, 0],
+        [1, 0, 0]
+    ]),
+    9: np.array([
+        [0, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1]
+    ])
+}
+
+
 def main():
     # make window appear
     pg.init()
@@ -78,8 +150,6 @@ def main():
     # backdrop occupies 80% of the screen and is initially all black
     backdrop = np.zeros((BACKDROP_WIDTH, BACKDROP_HEIGHT, 3), dtype=np.float64)
     backdrop = normalized_array_to_surf(backdrop)
-
-
 
     base_kernel = np.array([[0, 0, 0], 
                             [0, 0, 0], 
@@ -176,6 +246,7 @@ def main():
         backdrop = normalized_array_to_surf(backdrop)
         
         screen.blit(backdrop, (0, 0))
+        display_kernel(screen, base_kernel)
         pg.display.flip()
         clock.tick(60)
 
