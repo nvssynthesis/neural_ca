@@ -18,6 +18,18 @@ def normalized_array_to_surf(array: np.ndarray) -> pg.Surface:
     surf = pg.surfarray.make_surface(array)
     return surf
 
+def add_surfaces(surf1: pg.Surface, surf2: pg.Surface, amt_1: float = 0.5, amt_2: float = 0.5) -> pg.Surface:
+    array1 = surf_to_normalized_array(surf1)
+    array2 = surf_to_normalized_array(surf2)
+    array = array1 * amt_1 + array2 * amt_2
+    return normalized_array_to_surf(array)
+
+
+def roll_surface(surf: pg.Surface, n: int=1) -> pg.Surface:
+    array = surf_to_normalized_array(surf)
+    array = np.roll(array, -n, axis=1)
+    return normalized_array_to_surf(array)
+
 class Draw():
     def __init__(self):
         self.last_screen = np.zeros((SCREEN_WIDTH, SCREEN_HEIGHT, 3), dtype=np.float64)
@@ -27,9 +39,11 @@ class Draw():
 
     def draw(self, screen: pg.Surface):
         interp_factor = 0.95
-        fadeout_factor = 0.7
+        fadeout_factor = 0.5
         s = surf_to_normalized_array(screen) * interp_factor
+        # set any pixels that are less than 0.1 to 0
         s += self.last_screen * (1 - interp_factor)
+        s = np.where(s < 0.1, 0, s)
         s = np.clip(s, 0, 1)
         s = normalized_array_to_surf(s)
         screen.blit(s, (0, 0))
@@ -43,9 +57,11 @@ def main():
     # make window appear
     pg.init()
     screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    fps = pg.time.Clock()
     pg.display.set_caption("neural worms")
 
     clear(screen)
+    backdrop = screen.copy()
 
     draw = Draw()
 
@@ -59,6 +75,7 @@ def main():
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     clear(screen)
+                    clear(backdrop)
         
         # get mouse position
         mouse_pos = pg.mouse.get_pos()
@@ -68,11 +85,17 @@ def main():
         
         # hold drawing if mouse was clicked
         if pg.mouse.get_pressed()[0]:
-            pass
+            # draw circle on backdrop
+            pg.draw.circle(backdrop, color=(128, 128, 128), center=mouse_pos, radius=1, width=1)
+        # add backdrop to screen
+        screen.blit(add_surfaces(screen, backdrop, amt_1=1.0, amt_2=1.0), (0, 0))
 
         draw(screen)
 
+        backdrop = roll_surface(backdrop, n=1)
+
         pg.display.flip()
+        fps.tick(60)
 
     pg.quit()
 
