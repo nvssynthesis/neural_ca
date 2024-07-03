@@ -30,6 +30,30 @@ def roll_surface(surf: pg.Surface, n: int=1) -> pg.Surface:
     array = np.roll(array, -n, axis=1)
     return normalized_array_to_surf(array)
 
+def convolve_surface(surf: pg.Surface) -> pg.Surface:
+    kernel = np.array([
+        [[0, 0, 1],     # r
+         [0, 1, 0], 
+         [0, 0, 0]],
+        [[0, 0.1, 0],     # g
+         [0.1, -1, 0.1], 
+         [0, 0.1, 0]],
+        [[0, 0, 0],     # b
+         [0, 1, 0], 
+         [1, 0, 0]]
+    ])  
+    array = surf_to_normalized_array(surf)
+    channels = []
+    for chan in range(array.shape[2]):
+        channel = array[:, :, chan]
+        # Apply convolve2d to each channel with its own kernel
+        # Assuming kernel is a list of kernels for each channel
+        convolved_channel = convolve2d(channel, kernel[chan], mode='same', boundary='wrap')
+        channels.append(convolved_channel)        
+    array = np.stack(channels, axis=-1)
+    # array = convolve2d(array, kernel, mode='same', boundary='wrap')
+    return normalized_array_to_surf(array)
+
 class Draw():
     def __init__(self):
         self.last_screen = np.zeros((SCREEN_WIDTH, SCREEN_HEIGHT, 3), dtype=np.float64)
@@ -43,7 +67,7 @@ class Draw():
         s = surf_to_normalized_array(screen) * interp_factor
         # set any pixels that are less than 0.1 to 0
         s += self.last_screen * (1 - interp_factor)
-        s = np.where(s < 0.1, 0, s)
+        s = np.where(s < 0.09, 0, s)
         s = np.clip(s, 0, 1)
         s = normalized_array_to_surf(s)
         screen.blit(s, (0, 0))
@@ -92,7 +116,8 @@ def main():
 
         draw(screen)
 
-        backdrop = roll_surface(backdrop, n=1)
+        # backdrop = roll_surface(backdrop, n=1)
+        backdrop = convolve_surface(backdrop)
 
         pg.display.flip()
         fps.tick(60)
