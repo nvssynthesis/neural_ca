@@ -152,7 +152,7 @@ def main():
     backdrop = normalized_array_to_surf(backdrop)
 
     base_kernel = np.array([[0, 0, 0], 
-                            [0, 0, 0], 
+                            [0, 1, 0], 
                             [0, 0, 0]], dtype=np.float64)
 
     # keep window on screen
@@ -163,37 +163,21 @@ def main():
         # kernel for that entry is increased or decreased
         keys = pg.key.get_pressed()
         increment = 0.01
-        if keys[pg.K_UP] or keys[pg.K_DOWN]:
-            should_print = False
-            if keys[pg.K_q]:
-                base_kernel[0, 0] += increment if keys[pg.K_UP] else -increment
+        should_print = False
+        # keys -> kernel positions map
+        key_to_position = {
+            pg.K_q: (0, 0), pg.K_w: (0, 1), pg.K_e: (0, 2),
+            pg.K_a: (1, 0), pg.K_s: (1, 1), pg.K_d: (1, 2),
+            pg.K_z: (2, 0), pg.K_x: (2, 1), pg.K_c: (2, 2)
+        }
+        for key, position in key_to_position.items():
+            if keys[key] and (keys[pg.K_UP] or keys[pg.K_DOWN]):
+                row, col = position
+                base_kernel[row, col] += increment if keys[pg.K_UP] else -increment
                 should_print = True
-            if keys[pg.K_w]:
-                base_kernel[0, 1] += increment if keys[pg.K_UP] else -increment
-                should_print = True
-            if keys[pg.K_e]:
-                base_kernel[0, 2] += increment if keys[pg.K_UP] else -increment
-                should_print = True
-            if keys[pg.K_a]:
-                base_kernel[1, 0] += increment if keys[pg.K_UP] else -increment
-                should_print = True
-            if keys[pg.K_s]:
-                base_kernel[1, 1] += increment if keys[pg.K_UP] else -increment
-                should_print = True
-            if keys[pg.K_d]:
-                base_kernel[1, 2] += increment if keys[pg.K_UP] else -increment
-                should_print = True
-            if keys[pg.K_z]:
-                base_kernel[2, 0] += increment if keys[pg.K_UP] else -increment
-                should_print = True
-            if keys[pg.K_x]:
-                base_kernel[2, 1] += increment if keys[pg.K_UP] else -increment
-                should_print = True
-            if keys[pg.K_c]:
-                base_kernel[2, 2] += increment if keys[pg.K_UP] else -increment
-                should_print = True
-            if should_print:
-                print(base_kernel)
+        if should_print:
+            print(base_kernel)
+
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
@@ -243,22 +227,26 @@ def main():
         backdrop = surf_to_normalized_array(backdrop)
         backdrop = convolve_array(backdrop, base_kernel)
         lamdas = [
-            np.sin,
-            np.cos,
-            np.tanh,
-            np.exp,
-            np.log,
-            np.abs,
-            np.sqrt,
-            np.arctan,
-            np.arcsin,
-            np.arccos,
+            np.sin,     # classic yes
+            np.cos,     # crazy but sure
+            np.tanh,    # yes
+            np.exp,     # senselessly crazy
+            np.log,     # no
+            np.abs,     # meh
+            np.sqrt,    # sure
+            np.arctan, # HELL YES
+            np.arcsin, # yes
+            np.arccos, # no
             # bitcrusher
             lambda x: np.floor(x * 8) / 8,
         ]
-        backdrop = apply_nonlinearity(backdrop, lamdas[-1])
-        # backdrop = apply_nonlinearity(backdrop, lambda x: np.sin(x))
+        backdrop = apply_nonlinearity(backdrop, lamdas[0])
+        
+        # sample a line in the middle of the backdrop
+        line = backdrop[:, BACKDROP_HEIGHT // 2, :]
+        
         backdrop = normalized_array_to_surf(backdrop)
+
         
         screen.blit(backdrop, (0, 0))
         display_kernel(screen, base_kernel)
