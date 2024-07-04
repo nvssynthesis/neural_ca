@@ -1,6 +1,6 @@
 import numpy as np
 import pygame as pg
-from scipy.signal import convolve2d
+from scipy.signal import convolve2d, fftconvolve
 
 
 SCREEN_WIDTH = 800
@@ -39,27 +39,23 @@ def roll_surface(surf: pg.Surface, n: int=1) -> pg.Surface:
     return normalized_array_to_surf(array)
 
 def convolve_array(array: np.ndarray, base_kernel: np.ndarray) -> np.ndarray:
-    bk = base_kernel.T
+    # Check if using FFT is likely to be faster
+    if base_kernel.size > 30:  # Example threshold, adjust based on profiling
+        convolve_func = fftconvolve
+    else:
+        convolve_func = convolve2d  # Assuming convolve2d is imported
 
-    kernel = np.array([
-        bk,
-        bk,
-        bk
-    ])
-    kernel[0] = kernel[0] * 1
-    kernel[1] = kernel[0] * 1
-    kernel[2] = kernel[0] * 1
-    if np.max(array) > 1:
-        breakpoint()
+    # Prepare the kernel, no need to duplicate
+    kernel = base_kernel.T
+
     channels = []
     for chan in range(array.shape[2]):
         channel = array[:, :, chan]
-        # Apply convolve2d to each channel with its own kernel
-        # Assuming kernel is a list of kernels for each channel
-        convolved_channel = convolve2d(channel, kernel[0], mode='same', boundary='wrap')
-        channels.append(convolved_channel)        
-    array = np.stack(channels, axis=-1)
-    return array
+        # Apply convolution using the selected method
+        convolved_channel = convolve_func(channel, kernel, mode='same')
+        channels.append(convolved_channel)
+        
+    return np.stack(channels, axis=-1)
 
 def make_terrain():
     s = np.random.rand(13, 13, 1)

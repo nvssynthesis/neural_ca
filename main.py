@@ -3,9 +3,18 @@ import pygame_gui as pgui
 import numpy as np
 from kernel_presets import kernel_presets
 from activations import activations
+# timer
+from time import time
 
 from util import SCREEN_WIDTH, SCREEN_HEIGHT, BACKDROP_WIDTH, BACKDROP_HEIGHT, \
     surf_to_normalized_array, normalized_array_to_surf, convolve_array, display_kernel, make_terrain, clear
+
+
+def expand_kernel(base_kernel: np.ndarray, expansion_factor: int) -> np.ndarray:
+    expansion_kernel = np.zeros((expansion_factor, expansion_factor), dtype=np.float64)
+    expansion_kernel[0,0] = 1
+    expanded_kernel = np.kron(base_kernel, expansion_kernel)
+    return expanded_kernel
 
 
 def handle_key_presses(keys: dict, neural_ca_params: dict, verbose=False):
@@ -22,9 +31,15 @@ def handle_key_presses(keys: dict, neural_ca_params: dict, verbose=False):
     for key, position in key_to_position.items():
         if keys[key] and (keys[pg.K_UP] or keys[pg.K_DOWN]):
             row, col = position
+
             neural_ca_params['base_kernel'][row, col] += kernel_incr if keys[pg.K_UP] else -kernel_incr
+
+            neural_ca_params['expanded_kernel'] = expand_kernel(neural_ca_params['base_kernel'], 2)
+            
+
             if verbose:
                 print(neural_ca_params['base_kernel'])
+
     if keys[pg.K_t]:
         terr_incr = 0.005
         if keys[pg.K_UP] or keys[pg.K_DOWN]:
@@ -39,7 +54,7 @@ def handle_key_presses(keys: dict, neural_ca_params: dict, verbose=False):
 
 
 def handle_event(event: pg.event.Event, screen: pg.Surface, keys: dict, neural_ca_params: dict, 
-                 hello_button,
+                 hello_button=None,
                  verbose=False):
     if event.type == pg.QUIT:
         pg.quit()
@@ -67,6 +82,7 @@ def handle_event(event: pg.event.Event, screen: pg.Surface, keys: dict, neural_c
             new_base_kernel *= 2.0
             new_base_kernel -= 1.0
             neural_ca_params['base_kernel'] = new_base_kernel
+            neural_ca_params['expanded_kernel'] = expand_kernel(new_base_kernel, 2)
             if verbose:
                 print(new_base_kernel)
         # for a few number keys, a preset kernel is chosen. if shift is being held the current kernel is saved to that preset.
@@ -98,17 +114,20 @@ def main():
     clock = pg.time.Clock()
     gui_manager = pgui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-    hello_button = pgui.elements.UIButton(relative_rect=pg.Rect((350, 275), (100, 50)),
-                                                text='Say Hello',
-                                                manager=gui_manager)
+    # hello_button = pgui.elements.UIButton(relative_rect=pg.Rect((350, 275), (100, 50)),
+    #                                             text='Say Hello',
+    #                                             manager=gui_manager)
 
     pg.display.set_caption("neural worms")
 
+    initial_base = np.array([[0, 0, 0], 
+                            [0, 1, 0], 
+                            [0, 0, 0]], dtype=np.float64)
+    
     neural_ca_state = {
         'terrain_alpha': 0.1,
-        'base_kernel': np.array([[0, 0, 0], 
-                                [0, 1, 0], 
-                                [0, 0, 0]], dtype=np.float64),
+        'base_kernel': initial_base.copy(),
+        'expanded_kernel': expand_kernel(initial_base.copy(), 2),
         'backdrop': None,
     }
 
@@ -125,11 +144,15 @@ def main():
     while True:
         time_delta = clock.tick(60) / 1000.0
 
+        # get frame rate
+        fps = 1.0 / time_delta
+        print(fps)
+
         keys = pg.key.get_pressed()
         handle_key_presses(keys, neural_ca_params=neural_ca_state, verbose=False)
         for event in pg.event.get():
             handle_event(event, screen, keys, neural_ca_params=neural_ca_state, 
-                         hello_button=hello_button, 
+                         hello_button=None, 
                          verbose=False)
             gui_manager.process_events(event)
 
@@ -140,6 +163,7 @@ def main():
         handle_mouse(mouse_pos=pg.mouse.get_pos(), mouse_pressed=pg.mouse.get_pressed(), screen=screen, backdrop=neural_ca_state['backdrop'])
 
         base_kernel = neural_ca_state['base_kernel']
+        expanded_kernel = neural_ca_state['expanded_kernel']
         terrain_alpha = neural_ca_state['terrain_alpha']
         tf = np.arcsin
 
@@ -147,8 +171,7 @@ def main():
 
         bd = surf_to_normalized_array(neural_ca_state['backdrop'])
 
-        # downsample base_kernel from 3x3 to 12x12
-        # bk = np.kron(base_kernel, np.ones((4, 4))).copy()
+        bd = convolve_array(bd, expanded_kernel)
 
         bd = convolve_array(bd, base_kernel)
         bd = (1 - terrain_alpha) * bd + terrain_alpha * (bd * terrain)
@@ -157,16 +180,17 @@ def main():
 
         bd.set_alpha(240)
 
-        screen.blit(bd, (0, 0))
+
+        # bd_to_blit = bd.copy()
+
         gui_manager.draw_ui(bd)
+        screen.blit(bd, (0, 0))
 
         neural_ca_state['backdrop'] = bd
 
         display_kernel(screen, base_kernel)
 
         pg.display.flip()
-
-
 
 
 if __name__ == "__main__":
