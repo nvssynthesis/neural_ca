@@ -51,16 +51,16 @@ def handle_event(event: pg.event.Event, screen: pg.Surface, keys: dict, neural_c
     if event.type == pg.KEYDOWN:
         if event.key == pg.K_SPACE:
             clear(screen)
-            clear(backdrop)
+            clear(neural_ca_params['backdrop'])
             # screen.blit(terrain, (0, 0))
         # if 'r' is clicked, randomize the backdrop
         if event.key == pg.K_r:
-            backdrop = np.random.rand(BACKDROP_WIDTH, BACKDROP_HEIGHT, 3)
-            backdrop *= backdrop
+            bd = np.random.rand(BACKDROP_WIDTH, BACKDROP_HEIGHT, 3)
+            bd *= bd
             # print random 3x3 selection of backdrop
             if verbose:
-                print(backdrop[:3, :3, :])
-            backdrop = normalized_array_to_surf(backdrop)
+                print(bd[:3, :3, :])
+            neural_ca_params['backdrop'] = normalized_array_to_surf(bd)
         # if 'k' is clicked, randomize the kernel
         if event.key == pg.K_k:
             new_base_kernel = np.random.rand(3, 3)
@@ -104,28 +104,31 @@ def main():
 
     pg.display.set_caption("neural worms")
 
-    neural_cellular_automata_parameters = {
+    neural_ca_state = {
         'terrain_alpha': 0.1,
         'base_kernel': np.array([[0, 0, 0], 
                                 [0, 1, 0], 
                                 [0, 0, 0]], dtype=np.float64),
+        'backdrop': None,
     }
 
     clear(screen)
 
     terrain = make_terrain()
 
-    # backdrop occupies 80% of the screen and is initially all black
-    backdrop = np.zeros((BACKDROP_WIDTH, BACKDROP_HEIGHT, 3), dtype=np.float64)
-    backdrop = normalized_array_to_surf(backdrop)
+    if True:
+        # backdrop occupies 80% of the screen and is initially all black
+        bd = np.zeros((BACKDROP_WIDTH, BACKDROP_HEIGHT, 3), dtype=np.float64)
+        bd = normalized_array_to_surf(bd)
+        neural_ca_state['backdrop'] = bd
 
     while True:
         time_delta = clock.tick(60) / 1000.0
 
         keys = pg.key.get_pressed()
-        handle_key_presses(keys, neural_ca_params=neural_cellular_automata_parameters, verbose=False)
+        handle_key_presses(keys, neural_ca_params=neural_ca_state, verbose=False)
         for event in pg.event.get():
-            handle_event(event, screen, keys, neural_ca_params=neural_cellular_automata_parameters, 
+            handle_event(event, screen, keys, neural_ca_params=neural_ca_state, 
                          hello_button=hello_button, 
                          verbose=False)
             gui_manager.process_events(event)
@@ -134,24 +137,30 @@ def main():
         
         clear(screen)
         
-        handle_mouse(mouse_pos=pg.mouse.get_pos(), mouse_pressed=pg.mouse.get_pressed(), screen=screen, backdrop=backdrop)
+        handle_mouse(mouse_pos=pg.mouse.get_pos(), mouse_pressed=pg.mouse.get_pressed(), screen=screen, backdrop=neural_ca_state['backdrop'])
 
-        base_kernel = neural_cellular_automata_parameters['base_kernel']
-        terrain_alpha = neural_cellular_automata_parameters['terrain_alpha']
+        base_kernel = neural_ca_state['base_kernel']
+        terrain_alpha = neural_ca_state['terrain_alpha']
         tf = np.arcsin
 
         
 
-        backdrop = surf_to_normalized_array(backdrop)
-        backdrop = convolve_array(backdrop, base_kernel)
-        backdrop = (1 - terrain_alpha) * backdrop + terrain_alpha * (backdrop * terrain)
-        backdrop = tf(backdrop)
-        backdrop = normalized_array_to_surf(backdrop)
+        bd = surf_to_normalized_array(neural_ca_state['backdrop'])
 
-        backdrop.set_alpha(240)
+        # downsample base_kernel from 3x3 to 12x12
+        # bk = np.kron(base_kernel, np.ones((4, 4))).copy()
 
-        screen.blit(backdrop, (0, 0))
-        gui_manager.draw_ui(backdrop)
+        bd = convolve_array(bd, base_kernel)
+        bd = (1 - terrain_alpha) * bd + terrain_alpha * (bd * terrain)
+        bd = tf(bd)
+        bd = normalized_array_to_surf(bd)
+
+        bd.set_alpha(240)
+
+        screen.blit(bd, (0, 0))
+        gui_manager.draw_ui(bd)
+
+        neural_ca_state['backdrop'] = bd
 
         display_kernel(screen, base_kernel)
 
