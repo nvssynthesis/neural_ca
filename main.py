@@ -1,6 +1,7 @@
 import pygame as pg
 import numpy as np
 from scipy.signal import convolve2d
+from kernel_presets import kernel_presets
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -63,6 +64,28 @@ def apply_nonlinearity(array: np.ndarray, nonlinearity: callable) -> np.ndarray:
     array = nonlinearity(array)
     return array
 
+def make_terrain():
+    s = np.random.rand(13, 13, 1)
+    # make 3d array
+    s = np.concatenate([s, s, s], axis=2)
+
+    # center around 0.5
+    # s -= s.mean()
+    # s += 0.5
+    # s = np.sqrt(s)
+
+    s *= 255
+
+    s = s.astype(np.uint8)
+    s = normalized_array_to_surf(s)
+    s = s.convert(24)
+    s = pg.transform.smoothscale(s, (BACKDROP_WIDTH, BACKDROP_HEIGHT))
+    s = surf_to_normalized_array(s)
+
+    # s = np.clip(s, 0, 1)
+
+    return s
+
 
 def clear(screen):
     screen.fill((0, 0, 0))
@@ -85,59 +108,6 @@ def display_kernel(screen, kernel):
             pos_y = i * block_size
             screen.blit(block_surf, (pos_x, pos_y))
 
-kernel_presets: dict = {
-    0: np.array([
-        [-0.795, -0.671, 0.501],
-        [-0.993, -0.792,  0.609],
-        [0.392, 0.74, -0.987]
-    ], dtype=np.float64),
-    1: np.array([
-        [-0.04884933, -0.44665813,  0.61806521],
-        [-0.91224085, -0.06480854,  0.28417327],
-        [ 0.37040991, -0.73425871,  0.31814526]
-    ], dtype=np.float64),
-    2: np.array([
-        [ 0.3,  -1.,    0.51],
-        [-0.78, -1.66, -0.78],
-        [-1.43,  0.38, -0.07]
-    ], dtype=np.float64),
-    3: np.array([
-        [ 0.17075394,  0.21331279,  0.25395169],
-        [ 0.22687523,  0.09328171, -0.36148304],
-        [ 0.20261168,  0.21646832,  0.22501386]
-    ], dtype=np.float64),
-    4: np.array([
-        [-0.27924606,  0.13331279,  0.28395169],
-        [ 0.40687523,  0.29328171,  0.16851696],
-        [-0.29738832,  0.30646832,  0.13501386]
-    ], dtype=np.float64),
-    5: np.array([
-        [ 0.21075394,  0.17331279, -0.05604831],
-        [ 0.51687523,  0.11328171,  0.14851696],
-        [-0.76738832,  0.46646832,  0.20501386]
-    ], dtype=np.float64),
-    6: np.array([
-        [ 0.19075394,  0.17331279, -0.05604831],
-        [ 0.54687523,  0.03328171,  0.14851696],
-        [-0.76738832,  0.49646832,  0.18501386]
-    ], dtype=np.float64),
-    7: np.array([
-        [-0.45459072, -0.91901521,  0.32544112],
-        [-0.69739655,  0.24759039, -0.65519655],
-        [-0.42030883,  0.85556822,  0.57564318]
-    ], dtype=np.float64),
-    8: np.array([
-        [1, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ], dtype=np.float64),
-    9: np.array([
-        [0, 1, 0],
-        [0, 0, 0],
-        [0, 0, 0]
-    ], dtype=np.float64)
-}
-
 
 def main():
     # make window appear
@@ -147,9 +117,14 @@ def main():
     pg.display.set_caption("neural worms")
 
     clear(screen)
+
+    terrain = make_terrain()
+    terrain_alpha = 0.1  
+
     # backdrop occupies 80% of the screen and is initially all black
     backdrop = np.zeros((BACKDROP_WIDTH, BACKDROP_HEIGHT, 3), dtype=np.float64)
     backdrop = normalized_array_to_surf(backdrop)
+
 
     base_kernel = np.array([[0, 0, 0], 
                             [0, 1, 0], 
@@ -162,7 +137,7 @@ def main():
         # if up or down arrow keys are clicked while one of these keys are clicked, the value of the 
         # kernel for that entry is increased or decreased
         keys = pg.key.get_pressed()
-        increment = 0.01
+        kernel_incr = 0.01
         should_print = False
         # keys -> kernel positions map
         key_to_position = {
@@ -173,8 +148,18 @@ def main():
         for key, position in key_to_position.items():
             if keys[key] and (keys[pg.K_UP] or keys[pg.K_DOWN]):
                 row, col = position
-                base_kernel[row, col] += increment if keys[pg.K_UP] else -increment
+                base_kernel[row, col] += kernel_incr if keys[pg.K_UP] else -kernel_incr
                 should_print = True
+        if keys[pg.K_t]:
+            terr_incr = 0.005
+            if keys[pg.K_UP]:
+                terrain_alpha += terr_incr
+                terrain_alpha = min(terrain_alpha, 1)
+                print(terrain_alpha)
+            elif keys[pg.K_DOWN]:
+                terrain_alpha -= terr_incr
+                terrain_alpha = max(terrain_alpha, 0)
+                print(terrain_alpha)
         if should_print:
             print(base_kernel)
 
@@ -186,6 +171,7 @@ def main():
                 if event.key == pg.K_SPACE:
                     clear(screen)
                     clear(backdrop)
+                    # screen.blit(terrain, (0, 0))
                 # if 'r' is clicked, randomize the backdrop
                 if event.key == pg.K_r:
                     backdrop = np.random.rand(BACKDROP_WIDTH, BACKDROP_HEIGHT, 3)
@@ -208,7 +194,9 @@ def main():
                     else:
                         base_kernel = kernel_presets[index]
 
+
         clear(screen)
+        # screen.blit(terrain, (0, 0))
         
         # get mouse position
         mouse_pos = pg.mouse.get_pos()
@@ -226,28 +214,34 @@ def main():
 
         backdrop = surf_to_normalized_array(backdrop)
         backdrop = convolve_array(backdrop, base_kernel)
+        # backdrop = backdrop + terrain_alpha * terrain
+        backdrop = (1 - terrain_alpha) * backdrop + terrain_alpha * (backdrop * terrain)
         lamdas = [
             np.sin,     # classic yes
             np.cos,     # crazy but sure
             np.tanh,    # yes
-            np.exp,     # senselessly crazy
-            np.log,     # no
-            np.abs,     # meh
-            np.sqrt,    # sure
-            np.arctan, # HELL YES
-            np.arcsin, # yes
-            np.arccos, # no
+
             # bitcrusher
             lambda x: np.floor(x * 8) / 8,
+            #inverse gaussian
+            lambda x: -1./pow(2., (pow(x, 2.)))+1,
+
+            np.exp,     # senselessly crazy
+            np.sqrt,    # sure
+            np.arctan,  # HELL YES
+            np.arcsin,  # yes
+            np.arccos,  # no
+            np.log,     # no
+            np.abs,     # meh
         ]
-        backdrop = apply_nonlinearity(backdrop, lamdas[0])
+        backdrop = apply_nonlinearity(backdrop, np.arcsin)
         
         # sample a line in the middle of the backdrop
         line = backdrop[:, BACKDROP_HEIGHT // 2, :]
         
         backdrop = normalized_array_to_surf(backdrop)
 
-        
+        backdrop.set_alpha(240)
         screen.blit(backdrop, (0, 0))
         display_kernel(screen, base_kernel)
         pg.display.flip()
