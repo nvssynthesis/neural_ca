@@ -1,4 +1,5 @@
 import pygame as pg
+import pygame_gui as pgui
 import numpy as np
 from kernel_presets import kernel_presets
 from activations import activations
@@ -35,10 +36,17 @@ def handle_key_presses(keys: dict, neural_ca_params: dict, verbose=False):
             if verbose:
                 print(terrain_alpha)
 
-def handle_event(event: pg.event.Event, screen: pg.Surface, keys: dict, neural_ca_params: dict, verbose=False):
+
+
+def handle_event(event: pg.event.Event, screen: pg.Surface, keys: dict, neural_ca_params: dict, 
+                 hello_button,
+                 verbose=False):
     if event.type == pg.QUIT:
         pg.quit()
         quit(0)
+    if event.type == pgui.UI_BUTTON_PRESSED:
+        if event.ui_element == hello_button:
+            print('Hello World!')
     # if space bar is clicked, clear screen
     if event.type == pg.KEYDOWN:
         if event.key == pg.K_SPACE:
@@ -88,6 +96,12 @@ def main():
     pg.init()
     screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pg.time.Clock()
+    gui_manager = pgui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    hello_button = pgui.elements.UIButton(relative_rect=pg.Rect((350, 275), (100, 50)),
+                                                text='Say Hello',
+                                                manager=gui_manager)
+
     pg.display.set_caption("neural worms")
 
     neural_cellular_automata_parameters = {
@@ -105,22 +119,28 @@ def main():
     backdrop = np.zeros((BACKDROP_WIDTH, BACKDROP_HEIGHT, 3), dtype=np.float64)
     backdrop = normalized_array_to_surf(backdrop)
 
-    # keep window on screen
     while True:
+        time_delta = clock.tick(60) / 1000.0
+
         keys = pg.key.get_pressed()
         handle_key_presses(keys, neural_ca_params=neural_cellular_automata_parameters, verbose=False)
         for event in pg.event.get():
-            handle_event(event, screen, keys, neural_ca_params=neural_cellular_automata_parameters, verbose=False)
+            handle_event(event, screen, keys, neural_ca_params=neural_cellular_automata_parameters, 
+                         hello_button=hello_button, 
+                         verbose=False)
+            gui_manager.process_events(event)
 
+        gui_manager.update(time_delta)
+        
         clear(screen)
         
         handle_mouse(mouse_pos=pg.mouse.get_pos(), mouse_pressed=pg.mouse.get_pressed(), screen=screen, backdrop=backdrop)
-
 
         base_kernel = neural_cellular_automata_parameters['base_kernel']
         terrain_alpha = neural_cellular_automata_parameters['terrain_alpha']
         tf = np.arcsin
 
+        
 
         backdrop = surf_to_normalized_array(backdrop)
         backdrop = convolve_array(backdrop, base_kernel)
@@ -129,10 +149,13 @@ def main():
         backdrop = normalized_array_to_surf(backdrop)
 
         backdrop.set_alpha(240)
+
         screen.blit(backdrop, (0, 0))
+        gui_manager.draw_ui(backdrop)
+
         display_kernel(screen, base_kernel)
+
         pg.display.flip()
-        clock.tick(60)
 
 
 
