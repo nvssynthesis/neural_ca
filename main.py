@@ -102,7 +102,7 @@ def handle_mouse(mouse_pos: tuple, mouse_pressed: tuple, screen: pg.Surface, bac
         # random color
         color = np.random.rand(3)
         color = color * 255
-        pg.draw.circle(backdrop, color=color, center=mouse_pos, radius=3, width=1)
+        pg.draw.circle(backdrop, color=color, center=mouse_pos, radius=1, width=1)
 
 
 
@@ -156,7 +156,8 @@ def main(verbose=False):
         
         clear(screen)
         
-        handle_mouse(mouse_pos=pg.mouse.get_pos(), mouse_pressed=pg.mouse.get_pressed(), screen=screen, backdrop=neural_ca_state['backdrop'])
+        handle_mouse(mouse_pos=pg.mouse.get_pos(), mouse_pressed=pg.mouse.get_pressed(), 
+                     screen=screen, backdrop=neural_ca_state['backdrop'])
 
         base_kernel = neural_ca_state['base_kernel']
         expanded_kernel = neural_ca_state['expanded_kernel']

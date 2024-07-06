@@ -52,7 +52,7 @@ def convolve_array(array: np.ndarray, base_kernel: np.ndarray) -> np.ndarray:
     for chan in range(array.shape[2]):
         channel = array[:, :, chan]
         # Apply convolution using the selected method
-        convolved_channel = convolve_func(channel, kernel, mode='same')
+        convolved_channel = convolve_func(channel, kernel, mode='same', boundary='wrap')
         channels.append(convolved_channel)
         
     return np.stack(channels, axis=-1)
