@@ -2,11 +2,11 @@ import pygame as pg
 import pygame_gui as pgui
 import numpy as np
 from kernel_presets import kernel_presets
-from activations import activations
+from activations import ActivationEnum, activations
 # timer
 from time import time
 
-from util import SCREEN_WIDTH, SCREEN_HEIGHT, BACKDROP_WIDTH, BACKDROP_HEIGHT, \
+from util import SCREEN_WIDTH, SCREEN_HEIGHT, BACKDROP_WIDTH, BACKDROP_HEIGHT, KERNEL_DISPLAY_WIDTH,\
     surf_to_normalized_array, normalized_array_to_surf, convolve_array, display_kernel, make_terrain, clear
 
 
@@ -59,8 +59,15 @@ def handle_event(event: pg.event.Event, screen: pg.Surface, keys: dict, neural_c
         pg.quit()
         quit(0)
     if event.type == pgui.UI_BUTTON_PRESSED:
-        if event.ui_element == hello_button:
-            print('Hello World!')
+        pass
+        # if event.ui_element == some_button:
+        #     pass
+    elif event.type == pgui.UI_DROP_DOWN_MENU_CHANGED:
+        neural_ca_params['activation'] = ActivationEnum[event.text]
+        if verbose:
+            print(f'activation set to {event.text}')
+        # self.selected_piece = [p for p in pieces if p.name == event.text][0]
+
     # if space bar is clicked, clear screen
     if event.type == pg.KEYDOWN:
         if event.key == pg.K_SPACE:
@@ -105,13 +112,18 @@ def handle_mouse(mouse_pos: tuple, mouse_pressed: tuple, screen: pg.Surface, bac
         pg.draw.circle(backdrop, color=color, center=mouse_pos, radius=1, width=1)
 
 
-
 def main(verbose=False):
     # make window appear
     pg.init()
     screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pg.time.Clock()
     gui_manager = pgui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    activations_dropdown = pgui.elements.UIDropDownMenu(
+            options_list=[a.name for a in ActivationEnum],
+            starting_option=ActivationEnum.SIN.name,
+            relative_rect=pg.Rect((BACKDROP_WIDTH, SCREEN_HEIGHT * 0.3), (KERNEL_DISPLAY_WIDTH, 30)),
+            manager=gui_manager)
 
     pg.display.set_caption("neural worms")
 
@@ -123,6 +135,7 @@ def main(verbose=False):
         'terrain_alpha': 0.1,
         'base_kernel': initial_base.copy(),
         'expanded_kernel': expand_kernel(initial_base.copy(), 2),
+        'activation': ActivationEnum.SIN,
         'backdrop': None,
     }
 
@@ -147,10 +160,10 @@ def main(verbose=False):
         keys = pg.key.get_pressed()
         handle_key_presses(keys, neural_ca_params=neural_ca_state, verbose=True)
         for event in pg.event.get():
+            gui_manager.process_events(event)
             handle_event(event, screen, keys, neural_ca_params=neural_ca_state, 
                          hello_button=None, 
                          verbose=False)
-            gui_manager.process_events(event)
 
         gui_manager.update(time_delta)
         
@@ -162,7 +175,7 @@ def main(verbose=False):
         base_kernel = neural_ca_state['base_kernel']
         expanded_kernel = neural_ca_state['expanded_kernel']
         terrain_alpha = neural_ca_state['terrain_alpha']
-        tf = np.arcsin  # get from menu instead of hardcoding
+        tf = activations[neural_ca_state['activation']]['function']  # get from menu instead of hardcoding
 
     
         bd = surf_to_normalized_array(neural_ca_state['backdrop'])
@@ -170,16 +183,14 @@ def main(verbose=False):
         # bd = convolve_array(bd, expanded_kernel)
 
         bd = convolve_array(bd, base_kernel)
-        # bd = (1 - terrain_alpha) * bd + terrain_alpha * (bd * terrain)
+        bd = (1 - terrain_alpha) * bd + terrain_alpha * (bd * terrain)
         bd = tf(bd)
         bd = normalized_array_to_surf(bd)
 
         bd.set_alpha(240)
 
-        # bd_to_blit = bd.copy()
-
-        gui_manager.draw_ui(bd)
         screen.blit(bd, (0, 0))
+        gui_manager.draw_ui(screen)
 
         neural_ca_state['backdrop'] = bd
 
