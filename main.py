@@ -35,10 +35,9 @@ def handle_key_presses(keys: dict, neural_ca_params: dict, verbose=False):
             neural_ca_params['base_kernel'][row, col] += kernel_incr if keys[pg.K_UP] else -kernel_incr
 
             neural_ca_params['expanded_kernel'] = expand_kernel(neural_ca_params['base_kernel'], 2)
-            
 
             if verbose:
-                print(neural_ca_params['base_kernel'])
+                print(f'base kernel: {neural_ca_params['base_kernel']}')
 
     if keys[pg.K_t]:
         terr_incr = 0.005
@@ -49,7 +48,7 @@ def handle_key_presses(keys: dict, neural_ca_params: dict, verbose=False):
             terrain_alpha = max(terrain_alpha, 0)
             neural_ca_params['terrain_alpha'] = terrain_alpha
             if verbose:
-                print(terrain_alpha)
+                print(f'terrain_alpha: {terrain_alpha}')
 
 
 
@@ -107,16 +106,12 @@ def handle_mouse(mouse_pos: tuple, mouse_pressed: tuple, screen: pg.Surface, bac
 
 
 
-def main():
+def main(verbose=False):
     # make window appear
     pg.init()
     screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pg.time.Clock()
     gui_manager = pgui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-    # hello_button = pgui.elements.UIButton(relative_rect=pg.Rect((350, 275), (100, 50)),
-    #                                             text='Say Hello',
-    #                                             manager=gui_manager)
 
     pg.display.set_caption("neural worms")
 
@@ -145,11 +140,12 @@ def main():
         time_delta = clock.tick(60) / 1000.0
 
         # get frame rate
-        fps = 1.0 / time_delta
-        print(fps)
+        if verbose:
+            fps = 1.0 / time_delta
+            print(f'fps: {fps}')
 
         keys = pg.key.get_pressed()
-        handle_key_presses(keys, neural_ca_params=neural_ca_state, verbose=False)
+        handle_key_presses(keys, neural_ca_params=neural_ca_state, verbose=True)
         for event in pg.event.get():
             handle_event(event, screen, keys, neural_ca_params=neural_ca_state, 
                          hello_button=None, 
@@ -165,21 +161,19 @@ def main():
         base_kernel = neural_ca_state['base_kernel']
         expanded_kernel = neural_ca_state['expanded_kernel']
         terrain_alpha = neural_ca_state['terrain_alpha']
-        tf = np.arcsin
+        tf = np.arcsin  # get from menu instead of hardcoding
 
-        
-
+    
         bd = surf_to_normalized_array(neural_ca_state['backdrop'])
 
-        bd = convolve_array(bd, expanded_kernel)
+        # bd = convolve_array(bd, expanded_kernel)
 
         bd = convolve_array(bd, base_kernel)
-        bd = (1 - terrain_alpha) * bd + terrain_alpha * (bd * terrain)
+        # bd = (1 - terrain_alpha) * bd + terrain_alpha * (bd * terrain)
         bd = tf(bd)
         bd = normalized_array_to_surf(bd)
 
         bd.set_alpha(240)
-
 
         # bd_to_blit = bd.copy()
 
