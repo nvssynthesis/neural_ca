@@ -18,7 +18,6 @@ class ActivationEnum(Enum):
     INV_SQUARE = auto()
     INV_CUBE = auto()
     ARCCOS = auto()
-    LOG = auto()
 
 activations = {
     ActivationEnum.LINEAR: {'function': lambda x: x},
@@ -37,7 +36,6 @@ activations = {
     ActivationEnum.INV_SQUARE: {'function': lambda x: 1. / pow(x, 2)},
     ActivationEnum.INV_CUBE: {'function': lambda x: 1. / pow(x, 3)},
     ActivationEnum.ARCCOS: {'function': np.arccos},
-    ActivationEnum.LOG: {'function': np.log}
 }
 # activations = [
 #     np.sin,     # classic yes
