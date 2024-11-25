@@ -1,4 +1,5 @@
-neural_ca is an interactive neural cellular automaton. Neural cellular automaton are akin to a classic cellular automaton, with the modifications:
+## Neural Cellular Automata
+neural_ca is an interactive *neural cellular automaton*. Neural cellular automata are akin to a classic [cellular automaton](https://en.wikipedia.org/wiki/Cellular_automaton), with the modifications:
 
 * the states are effectively continuous (in actuality, floating-point)
 
@@ -8,10 +9,26 @@ neural_ca is an interactive neural cellular automaton. Neural cellular automaton
 
     - applying a (usually nonlinear) activation function to the convolution result
 
-While neural cellular automaton can be used very cleverly to solve real problems or simulate/model complex systems, in this project, the user is just meant to explore some of the possibilities of this system in an interactive manner.
+While neural cellular automata have the potential to solve real-world problems or model complex systems, the focus of this project is purely exploratory. Users can interactively experiment with the system to visually uncover the behaviors and patterns it can produce.
 
+## Installation
 
+1. Clone the repository:
+    ```sh
+    git clone https://github.com/nvssynthesis/neural_ca.git
+    ```
 
+2. Navigate to the project directory:
+    ```sh
+    cd neural_ca
+    ```
+
+3. Install the required dependencies:
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+## Gameplay
 neural_ca is essentially a game with no goal; you can play but you cannot win or lose. Here are the gameplay instructions:
 
 * You can **enliven** cells by clicking on them, randomizing its color and giving it nonzero value. Of course, if the environmental conditions are such that the cell won't survive (such as the condition on startup), you should just see the cell light up for one or a few frames and then dissipate. If, on the other hand, the conditions around that cell allow for thriving, it should stay lit, or possibly transfer its life to a cell in its neighborhood. 
