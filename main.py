@@ -37,7 +37,7 @@ def handle_key_presses(keys: dict, neural_ca_params: dict, verbose=False):
             neural_ca_params['expanded_kernel'] = expand_kernel(neural_ca_params['base_kernel'], 2)
 
             if verbose:
-                print(f'base kernel: {neural_ca_params['base_kernel']}')
+                print(f'base kernel: \n{neural_ca_params['base_kernel']}')
 
     if keys[pg.K_t]:
         terr_incr = 0.005
@@ -53,7 +53,6 @@ def handle_key_presses(keys: dict, neural_ca_params: dict, verbose=False):
 
 
 def handle_event(event: pg.event.Event, screen: pg.Surface, keys: dict, neural_ca_params: dict, 
-                 hello_button=None,
                  verbose=False):
     if event.type == pg.QUIT:
         pg.quit()
@@ -101,7 +100,7 @@ def handle_event(event: pg.event.Event, screen: pg.Surface, keys: dict, neural_c
                 neural_ca_params['base_kernel'] = kernel_presets[index]
 
 def handle_mouse(mouse_pos: tuple, mouse_pressed: tuple, screen: pg.Surface, backdrop: pg.Surface):
-    pg.draw.circle(screen, color=(50, 128, 200), center=mouse_pos, radius=3, width=1, 
+    pg.draw.circle(screen, color=(50, 128, 200), center=mouse_pos, radius=1, width=1, 
         draw_top_right=False, draw_top_left=False, draw_bottom_right=False, draw_bottom_left=False)
     
     if mouse_pressed[0]:
@@ -125,14 +124,14 @@ def main(verbose=False):
             relative_rect=pg.Rect((BACKDROP_WIDTH, SCREEN_HEIGHT * 0.3), (KERNEL_DISPLAY_WIDTH, 30)),
             manager=gui_manager)
 
-    pg.display.set_caption("neural worms")
+    pg.display.set_caption("neural cellular automaton")
 
     initial_base = np.array([[0, 0, 0], 
                             [0, 1, 0], 
                             [0, 0, 0]], dtype=np.float64)
     
     neural_ca_state = {
-        'terrain_alpha': 0.1,
+        'terrain_alpha': 0.0,
         'base_kernel': initial_base.copy(),
         'expanded_kernel': expand_kernel(initial_base.copy(), 2),
         'activation': ActivationEnum.SIN,
@@ -162,7 +161,6 @@ def main(verbose=False):
         for event in pg.event.get():
             gui_manager.process_events(event)
             handle_event(event, screen, keys, neural_ca_params=neural_ca_state, 
-                         hello_button=None, 
                          verbose=False)
 
         gui_manager.update(time_delta)
