@@ -41,12 +41,11 @@ neural_ca is essentially a game with no goal; you can play but you cannot win or
 
 * You can **steer**/navigate/manipulate the conditions (and thus the cells) by changing the 3x3 convolution kernel. To do this, the letter keys in the left of a qwerty keyboard are interpreted as the indices the kernel: 
 
-  <div style="display: grid; grid-template-columns: repeat(3, auto); gap: 15px; text-align: left; padding: 10; justify-content: start;">
-  <div>q</div> <div>w</div> <div>e</div>
-  <div>a</div> <div>s</div> <div>d</div>
-  <div>z</div> <div>x</div> <div>c</div>
-  <p></p>
-</div>
+      [[q,w,e],
+
+      [a,s,d],
+      
+      [z,x,c]]
 
   * If you hold any of these keys while pressing the UP or DOWN arrows, you will increment or decrement the corresponding matrix kernel entry by a small amount.
 
